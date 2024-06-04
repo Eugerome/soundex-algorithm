@@ -1,0 +1,12 @@
+version: '3.4'
+
+services:
+  vscodesetup:
+    image: vscodesetup
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    # install poetry and prevent image from exiting
+    command: /bin/sh -c "poetry install && while sleep 1000; do :; done"
+    volumes:
+        - ./:/app

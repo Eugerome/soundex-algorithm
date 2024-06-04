@@ -1,0 +1,12 @@
+version: '3.4'
+
+services:
+  vscodesetup:
+    image: vscodesetup
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    # install poetry without dev dependencies
+    command: /bin/sh -c "poetry install --without dev"
+    volumes:
+        - ./:/app
