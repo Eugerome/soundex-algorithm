@@ -2,45 +2,34 @@
 import logging
 import os
 
-from typing import List
-
+from typing import Union
 
 # create logger
 LOGGER = logging.getLogger(__name__)
 
-# default values
-INPUT_FOLDER = "input"
 
-
-def read_file_names(input_folder: str = INPUT_FOLDER) -> list:
+def read_file(file_name: str = "test.txt") -> Union[str, None]:
     """Reads the file names from the input folder"""
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    try:
-        file_names = os.listdir(f"{dir_path}/{input_folder}")
-    except FileNotFoundError as e:
-        logging.error(f"Folder '{input_folder}' not found: {e}")
-        return
-    return file_names
-
-
-def clean_file_names(file_names: List[str]) -> List[str]:
-    """Cleans the file names and returns a list os supported files"""
     # just checking file extensions, file signature is overkill
-    supported_extensions = ".txt"
-    cleaned_files = [
-        file_name
-        for file_name in file_names
-        if file_name.endswith(supported_extensions)
-    ]
-    if (raw_len := len(file_names)) != (clean_len := len(cleaned_files)):
+    supported_extension = ".txt"
+    if not file_name.endswith(supported_extension):
+        logging.info(f"Unsupported file '{file_name}', please provide a .txt file")
+        return
+
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    file_path = f"{dir_path}/{file_name}"
+
+    if not os.path.isfile(file_path):
         logging.info(
-            f"Found {raw_len - clean_len} unsupported files in the input folder, they will be skipped"
+            f"File '{file_name}' not found in the input folder, please make sure you copied it"
         )
-    if clean_len == 0:
-        logging.info("No supported files found in the input folder, exiting...")
-    return cleaned_files
+        return
+
+    logging.info(f"Reading file '{file_name}'")
+    with open(file_path, "r") as file:
+        return file.read()
 
 
 if __name__ == "__main__":
-    clean_file_names(read_file_names())
+    read_file()
     print("Hello, World!")
