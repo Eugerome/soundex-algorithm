@@ -1,8 +1,8 @@
 version: '3.4'
 
 services:
-  vscodesetup:
-    image: vscodesetup
+  soundex:
+    image: soundex
     build:
       context: .
       dockerfile: ./Dockerfile
