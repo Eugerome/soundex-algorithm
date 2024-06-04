@@ -17,7 +17,7 @@ def read_file(file_name: str = "test.txt") -> Union[str, None]:
         return
 
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    file_path = f"{dir_path}/{file_name}"
+    file_path = f"{dir_path}/input/{file_name}"
 
     if not os.path.isfile(file_path):
         logging.info(
