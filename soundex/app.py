@@ -34,6 +34,7 @@ class SoundexCode:
             LOGGER.debug("Unsupported character found in the word, skipping it")
             return None
         # strip first letter and following letters have same value
+        converted_letters = [k for k, g in groupby(converted_letters)]
         converted_letters.pop(0)
         # strip h, w, y since letters separated by them need to be counted once
         converted_letters = list(
@@ -45,9 +46,9 @@ class SoundexCode:
         )
 
         resulting_value += "".join(converted_letters[:3])
-        if len_value := len(resulting_value) < 4:
+        if (len_value := len(resulting_value)) < 4:
             # pad the code with zeros
-            resulting_value += "0" * (3 - len_value)
+            resulting_value += "0" * (4 - len_value)
         return resulting_value
 
     @staticmethod
