@@ -47,6 +47,7 @@ class SoundexCode:
         # not the best, since it makes multiple passes
         resulting_value = word[0].upper()
         converted_letters = [SoundexCode.code_letter(letter) for letter in word]
+        # this will include words with preceding/trailing punctiation that we did not strip
         if "-3" in converted_letters:
             LOGGER.debug("Unsupported character found in the word, skipping it")
             return None
