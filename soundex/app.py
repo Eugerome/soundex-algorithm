@@ -24,6 +24,23 @@ class SoundexCode:
         self.original_word = word
         self.value = self.code_name(word)
 
+    def __eq__(self, value: object) -> bool:
+        """Compare 2 soundex codes"""
+        if not isinstance(value, SoundexCode):
+            return False
+        if not self.value or not value.value:
+            return False
+        # ignore trailing zeros
+        # can use zip since should always be same lenght
+        for self_letter, value_letter in zip(self.value, value.value):
+            if (
+                self_letter != value_letter
+                and self_letter != "0"
+                and value_letter != "0"
+            ):
+                return False
+        return True
+
     @staticmethod
     def code_name(word) -> str:
         """Generates the Soundex code for a word"""
@@ -118,7 +135,7 @@ def run_soundex(target_word: SoundexCode, file_name: str):
         for word in line:
             word = re.sub(r"(^[^\w]+)|([^\w]+$)", "", word)
             soundex_code = SoundexCode(word)
-            if soundex_code.value == target_word.value:
+            if soundex_code == target_word:
                 matches.append(soundex_code.original_word)
                 LOGGER.info(f"Match found: {soundex_code.original_word}")
     return matches
