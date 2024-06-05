@@ -72,7 +72,7 @@ class SoundexCode:
     def code_letter(letter: str) -> int:
         """Returns the code for a letter."""
         if len(letter) > 1:
-            raise ValueError("Not a  letter")
+            raise ValueError("Not a single letter")
         letter = letter.upper()
         match letter:
             case "A" | "E" | "I" | "O" | "U":
