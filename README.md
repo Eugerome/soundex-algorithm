@@ -13,17 +13,10 @@ docker-compose build
 
 Copy `.txt` you want processed into `soundex/input` folder. 
 
-First, install all main dependencies (there are none, so optional)
-```
-docker-compose up
-
-
 Then run the following command:
 ```
 docker-compose run soundex python soundex/app.py
 ```
-
-This should build the image (if you haven't already) and run the CLI script.
 
 The script should prompt you with insctructions.
 
