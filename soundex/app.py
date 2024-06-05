@@ -1,9 +1,10 @@
 # CLI for soundex
 import logging
 import os
+import re
 
 from itertools import groupby
-from typing import Union, List
+from typing import Union, Generator
 
 # create logger
 LOGGER = logging.getLogger(__name__)
@@ -27,25 +28,25 @@ class SoundexCode:
         """Generates the Soundex code for a word"""
         # not the best, since it makes multiple passes
         resulting_value = word[0].upper()
-        try:
-            converted_letters = [SoundexCode.code_letter(letter) for letter in word]
-        except ValueError as e:
-            # contains odd symbols, ignore
-            resulting_value = None
-            LOGGER.debug(f"Found word with strange symbol, skipping: {e}")
-            return
+        converted_letters = [SoundexCode.code_letter(letter) for letter in word]
+        if "-3" in converted_letters:
+            LOGGER.debug("Unsupported character found in the word, skipping it")
+            return None
         # strip first letter and following letters have same value
-        converted_letters = [k for k, g in groupby(converted_letters)]
         converted_letters.pop(0)
         # strip h, w, y since letters separated by them need to be counted once
-        converted_letters = list(filter(lambda letter: letter != "-2", converted_letters))
+        converted_letters = list(
+            filter(lambda letter: letter != "-2", converted_letters)
+        )
         converted_letters = [k for k, g in groupby(converted_letters)]
-        converted_letters = list(filter(lambda letter: letter != "-1", converted_letters))
+        converted_letters = list(
+            filter(lambda letter: letter != "-1", converted_letters)
+        )
 
         resulting_value += "".join(converted_letters[:3])
         if len_value := len(resulting_value) < 4:
             # pad the code with zeros
-            resulting_value += "0" * (4 - len_value)
+            resulting_value += "0" * (3 - len_value)
         return resulting_value
 
     @staticmethod
@@ -74,23 +75,12 @@ class SoundexCode:
             case "R":
                 return "6"
             case _:
-                # ignore words with strange symbols and non ascii characters
-                raise ValueError(f"Unsupported character '{letter}'")
-
-    @staticmethod
-    def remove_adjacent(num_list: List[int]):
-        """Remove adjacent numbers that have same value"""
-        i = 1
-        while i < len(num_list):
-            if num_list[i] == num_list[i - 1]:
-                num_list.pop(i)
-                i -= 1
-            i += 1
-        return num_list
+                # unsupported character, including non-ascii
+                return "-3"
 
 
-def read_file(file_name: str = "test.txt") -> Union[str, None]:
-    """Reads the file names from the input folder"""
+def read_file(file_name: str = "test.txt") -> Union[Generator, None]:
+    """Reads provided file line by line"""
     # just checking file extensions, file signature is overkill
     supported_extension = ".txt"
     if not file_name.endswith(supported_extension):
@@ -108,9 +98,33 @@ def read_file(file_name: str = "test.txt") -> Union[str, None]:
 
     logging.info(f"Reading file '{file_name}'")
     with open(file_path, "r") as file:
-        return file.read()
+        for line in file:
+            yield line.split()
+
+
+def run_soundex(target_word: str, file_name: str):
+    """Runs the soundex code generator"""
+    target_word = SoundexCode(target_word)
+    if not target_word.value:
+        LOGGER.info(
+            "Unsupported character found in word, please use only ascii alphabet letters"
+        )
+        return
+    matches = []
+    for line in read_file(file_name):
+        if not line:
+            continue
+        # doesn't handle poorly formatted text, for example "word,word2"
+        for word in line:
+            word = re.sub(r"(^[^\w]+)|([^\w]+$)", "", word)
+            soundex_code = SoundexCode(word)
+            if soundex_code.value == target_word.value:
+                matches.append(soundex_code.original_word)
+                LOGGER.info(f"Match found: {soundex_code.original_word}")
+    return matches
 
 
 if __name__ == "__main__":
-    a = SoundexCode("Ddimadubizumi")
+    # a = SoundexCode("Ddimadubizumi")
+    matches = run_soundex("line", "test.txt")
     print("Hello, World!")
