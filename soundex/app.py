@@ -1,9 +1,7 @@
 # CLI for soundex
 import logging
 import os
-import re
 
-from itertools import groupby
 from typing import Generator, Union
 
 # create logger
@@ -13,6 +11,8 @@ LOGGER = logging.getLogger(__name__)
 
 class SoundexCode:
     """Soundex code generator"""
+
+    MAX_CODE_LENGTH = 4
 
     def __init__(self, word: str):
         """Initializes the Soundex code generator with a word
@@ -45,29 +45,55 @@ class SoundexCode:
     def code_name(word) -> str:
         """Generates the Soundex code for a word"""
         # not the best, since it makes multiple passes
-        resulting_value = word[0].upper()
-        converted_letters = [SoundexCode.code_letter(letter) for letter in word]
-        # this will include words with preceding/trailing punctiation that we did not strip
-        if "-3" in converted_letters:
-            LOGGER.debug("Unsupported character found in the word, skipping it")
-            return None
-        # strip first letter and following letters have same value
-        converted_letters = [k for k, g in groupby(converted_letters)]
-        converted_letters.pop(0)
-        # strip h, w, y since letters separated by them need to be counted once
-        converted_letters = list(
-            filter(lambda letter: letter != "-2", converted_letters)
-        )
-        converted_letters = [k for k, g in groupby(converted_letters)]
-        converted_letters = list(
-            filter(lambda letter: letter != "-1", converted_letters)
-        )
-
-        resulting_value += "".join(converted_letters[:3])
-        if (len_value := len(resulting_value)) < 4:
-            # pad the code with zeros
-            resulting_value += "0" * (4 - len_value)
-        return resulting_value
+        code = ""
+        # can be abstracted, but is helpful for debugging
+        previous_letter = None
+        for letter in word:
+            if (code_len := len(code)) == SoundexCode.MAX_CODE_LENGTH:
+                # we have all the values we need
+                break
+            current_letter = SoundexCode.code_letter(letter)
+            if current_letter == -3:
+                # unsupported character, exiting
+                # note, if we already have a long enough code, this will never trigger
+                # so we can encode "Begalybė" (B241) but not "Begalį" (B24-) for example
+                LOGGER.debug(
+                    f"Unsupported character found in the word '{word}', skipping"
+                )
+                return
+            if previous_letter is None:
+                # this is the first letter of the word, we need to save it to the code
+                # and encode it for further comparison
+                # so that we can ignore encoding it twice, for example "JJ" -> "J000"
+                # instead of "J200"
+                code = str(letter.upper())
+                previous_letter = current_letter
+                continue
+            if previous_letter == current_letter:
+                # we have the same letter, we can ignore it
+                continue
+            # we have a new letter
+            match current_letter:
+                case -1:
+                    # these are vowels, we can ignore them
+                    # All we need to do here is to save it as the previous letter, but since
+                    # that is done below anyway we can just pass
+                    pass
+                case -2:
+                    # we have a Y, H or W, we can ignore them, but
+                    # we should remember it since two letters with the same number separated
+                    # by 'h', 'w' or 'y' are coded as a single number
+                    # so we can move on without saving the previous letter
+                    continue
+                case _:
+                    # these is where we actually save the letter
+                    code += str(current_letter)
+            # note we do not check for -3 here, since we already did that above
+            previous_letter = current_letter
+        if (code_len := len(code)) < SoundexCode.MAX_CODE_LENGTH:
+            # we need to add trailing zeros
+            code += "0" * (SoundexCode.MAX_CODE_LENGTH - code_len)
+        return code
 
     @staticmethod
     def code_letter(letter: str) -> int:
@@ -78,25 +104,25 @@ class SoundexCode:
         match letter:
             case "A" | "E" | "I" | "O" | "U":
                 # personal abstraction, these will be ignored in the Soundex code
-                return "-1"
+                return -1
             case "Y" | "H" | "W":
                 # personal abstraction, these will be ignored in the Soundex code
-                return "-2"
+                return -2
             case "B" | "F" | "P" | "V":
-                return "1"
+                return 1
             case "C" | "G" | "J" | "K" | "Q" | "S" | "X" | "Z":
-                return "2"
+                return 2
             case "D" | "T":
-                return "3"
+                return 3
             case "L":
-                return "4"
+                return 4
             case "M" | "N":
-                return "5"
+                return 5
             case "R":
-                return "6"
+                return 6
             case _:
                 # unsupported character, including non-ascii
-                return "-3"
+                return -3
 
 
 def get_file_path(file_name: str = "test.txt") -> Union[str, None]:
@@ -134,7 +160,6 @@ def run_soundex(target_word: SoundexCode, file_name: str):
             continue
         # doesn't handle poorly formatted text, for example "word,word2"
         for word in line:
-            word = re.sub(r"(^[^\w]+)|([^\w]+$)", "", word)
             soundex_code = SoundexCode(word)
             if soundex_code == target_word:
                 matches.append(soundex_code.original_word)
