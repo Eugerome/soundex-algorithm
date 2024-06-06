@@ -3,16 +3,15 @@ import logging
 import os
 import re
 
-from itertools import groupby
 from typing import Generator, Union
 
 # create logger
 logging.basicConfig(level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
 
+
 class UnsupportedCharacter(Exception):
-    """Exception raised for non-ascii and punctuation chars
-    """
+    """Exception raised for non-ascii and punctuation chars"""
 
     def __init__(self, word, message=None):
         if not message:
@@ -22,9 +21,8 @@ class UnsupportedCharacter(Exception):
 
 class SoundexCode:
     """Soundex code generator"""
+
     MAX_CODE_LENGTH = 4
-
-
 
     def __init__(self, word: str):
         """Initializes the Soundex code generator with a word
@@ -34,7 +32,7 @@ class SoundexCode:
             # Not actually a word
             return
         self.original_word = word
-        self.value = self.code_name_2(word)
+        self.value = self.code_name(word)
 
     def __eq__(self, value: object) -> bool:
         """Compare 2 soundex codes"""
@@ -55,28 +53,6 @@ class SoundexCode:
 
     @staticmethod
     def code_name(word) -> str:
-        """Generates the Soundex code for a word"""
-        # not the best, since it makes multiple passes
-        resulting_value = word[0].upper()
-        converted_letters = [SoundexCode.code_letter(letter) for letter in word]
-        # this will include words with preceding/trailing punctiation that we did not strip
-        if "-3" in converted_letters:
-            LOGGER.debug("Unsupported character found in the word, skipping it")
-            return None
-        # strip first letter and following letters have same value
-        converted_letters = [k for k, g in groupby(converted_letters)]
-        converted_letters.pop(0)
-        # strip h, w, y since letters separated by them need to be counted once
-        converted_letters = list(
-            filter(lambda letter: letter != "-2", converted_letters)
-        )
-        converted_letters = [k for k, g in groupby(converted_letters)]
-        converted_letters = list(
-            filter(lambda letter: letter != "-1", converted_letters)
-        )
-
-    @staticmethod
-    def code_name_2(word) -> str:
         """Generates the Soundex code for a word"""
         # not the best, since it makes multiple passes
         code = ""
@@ -125,10 +101,6 @@ class SoundexCode:
             # we need to add trailing zeros
             code += "0" * (SoundexCode.MAX_CODE_LENGTH - code_len)
         return code
-
-            
-
-            
 
     @staticmethod
     def code_letter(letter: str) -> int:
@@ -206,7 +178,6 @@ def run_soundex(target_word: SoundexCode, file_name: str):
 if __name__ == "__main__":
     file_path = None
     target_word = None
-    a = SoundexCode.code_name_2("RRobert")
     while not file_path:
         file_name = input("Enter the file name: ")
         file_path = get_file_path(file_name)
