@@ -10,15 +10,6 @@ logging.basicConfig(level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
 
 
-class UnsupportedCharacter(Exception):
-    """Exception raised for non-ascii and punctuation chars"""
-
-    def __init__(self, word, message=None):
-        if not message:
-            self.message = f"Unsupported character found in the word '{word}', please only use ascii letters"
-        super().__init__(self.message)
-
-
 class SoundexCode:
     """Soundex code generator"""
 
@@ -67,7 +58,10 @@ class SoundexCode:
                 # unsupported character, exiting
                 # note, if we already have a long enough code, this will never trigger
                 # so we can encode "Begalybė" (B241) but not "Begalį" (B24-) for example
-                raise UnsupportedCharacter(word=word)
+                LOGGER.debug(
+                    f"Unsupported character found in the word '{word}', skipping"
+                )
+                return
             if previous_letter is None:
                 # this is the first letter of the word, we need to save it to the code
                 # and encode it for further comparison
@@ -97,7 +91,7 @@ class SoundexCode:
                     code += str(current_letter)
             # note we do not check for -3 here, since we already did that above
             previous_letter = current_letter
-        if code_len := len(code) < SoundexCode.MAX_CODE_LENGTH:
+        if (code_len := len(code)) < SoundexCode.MAX_CODE_LENGTH:
             # we need to add trailing zeros
             code += "0" * (SoundexCode.MAX_CODE_LENGTH - code_len)
         return code
