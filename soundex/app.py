@@ -1,7 +1,6 @@
 # CLI for soundex
 import logging
 import os
-import re
 
 from typing import Generator, Union
 
@@ -161,7 +160,6 @@ def run_soundex(target_word: SoundexCode, file_name: str):
             continue
         # doesn't handle poorly formatted text, for example "word,word2"
         for word in line:
-            word = re.sub(r"(^[^\w]+)|([^\w]+$)", "", word)
             soundex_code = SoundexCode(word)
             if soundex_code == target_word:
                 matches.append(soundex_code.original_word)
